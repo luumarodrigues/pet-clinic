@@ -33,7 +33,7 @@ pipeline {
       steps {
         sh 'echo -e "\033[0;33m## Build ##\033[0m"'
           sh '''
-             ./mvnw package
+             mvn package
              '''
         }
       }
