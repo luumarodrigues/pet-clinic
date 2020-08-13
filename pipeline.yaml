@@ -1,87 +1,26 @@
 format_version: 3
-
-environments:
-  common:
-    pipelines:
-    - pet-clinic-build
-  Dev:
-    pipelines:
-    - pet-clinic-deploy-dev
-  Homo:
-    pipelines:
-    - pet-clinic-deploy-hml
-  Prod:
-    pipelines:
-    - pet-clinic-deploy-prd
-
 pipelines:
-  pet-clinic-build:
-    group: pet-clinic
-    template: build
-    label_template: 1.0.${COUNT}-${pet-clinic-source[:5]}
-    lock_behavior: none
-    display_order: -1
-    environment_variables:
-      APP_NAME: pet-clinic
+  "gocd-yaml-plugin":
+    group: gocd
+    label_template: "${git[:8]}"
+    locking: off
     materials:
-      pet-clinic-source:
-        plugin_configuration:
-          id: git.fb
-          version: 1
-        options:
-          url: https://github.com/luumarodrigues/pet-clinic
-          defaultBranch: develop
-
-  pet-clinic-deploy-dev:
-    group: pet-clinic
-    template: deploy_develop
-    label_template: ${build-stage}
-    lock_behavior: none
-    display_order: -1
-    parameters:
-      build_pipeline: pet-clinic-build
-    environment_variables:
-      APP_NAME: pet-clinic
-      NS: pet-clinic
-    materials:
-      build-stage:
-        pipeline: pet-clinic-build
-        stage: docker-image-builder
-        name: build-stage
-
-  pet-clinic-deploy-hml:
-    group: pet-clinic
-    template: deploy_homol
-    label_template: ${dev-stage}
-    lock_behavior: none
-    display_order: -1
-    parameters:
-      build_pipeline: pet-clinic-build
-      dev_pipeline: pet-clinic-deploy-dev
-    environment_variables:
-      APP_NAME: pet-clinic
-      NS: $NAMESPACE
-    materials:
-      dev-stage:
-        pipeline: pet-clinic-deploy-dev
-        stage: stage-deploy-develop
-        name: job-deploy-develop
-
-  pet-clinic-deploy-prd:
-    group: pet-clinic
-    template: deploy_production
-    label_template: ${hml-stage}
-    lock_behavior: none
-    display_order: -1
-    parameters:
-      build_pipeline: pet-clinic-build
-      dev_pipeline: pet-clinic-deploy-dev
-      hml_pipeline: pet-clinic-deploy-hml
-    environment_variables:
-      APP_NAME: pet-clinic
-      NS: pet-clinic
-    materials:
-      hml-stage:
-        pipeline: pet-clinic-deploy-hml
-        stage: stage-deploy-hml
-        name: job-deploy-hml
+      git:
+        git: git@github.com:tomzo/gocd-yaml-config-plugin.git
+        blacklist:
+          - README.md
+    stages:
+      - build:
+          clean_workspace: true
+          resources:
+            - docker
+          artifacts:
+           - build:
+               source: build/libs/*.jar
+               destination: build/libs
+          tasks:
+           - exec:
+               command: bash
+               arguments:
+                - -c
+                - ./tasks.sh build
